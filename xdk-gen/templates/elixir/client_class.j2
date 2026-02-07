@@ -1,0 +1,47 @@
+defmodule Xdk.{{ tag.class_name }} do
+  @moduledoc "Auto-generated client for {{ tag.display_name }} operations"
+{% for operation in operations %}
+
+  @doc """
+  {{ operation.summary | default(value="") }}
+
+  {{ operation.method | upper }} {{ operation.path }}
+  {% if operation.description %}
+  {{ operation.description }}
+  {% endif %}
+  """
+  @spec {{ operation.method_name }}(Xdk.t()
+    {%- for param in operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') %}, {{ param.variable_name }} :: {{ param.param_type | elixir_type }}{% endfor %}
+    {%- if operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}, opts :: keyword(){% endif %}
+  ) :: {:ok, map()} | {:error, Exception.t()}
+  def {{ operation.method_name }}(client
+    {%- for param in operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') %}, {{ param.variable_name }}{% endfor %}
+    {%- if operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}, opts \\ []{% endif %}
+  ) do
+    {% set query_params = operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}
+    {% if query_params %}
+    query =
+      [
+        {%- for param in query_params %}
+        {"{{ param.original_name }}", Keyword.get(opts, :{{ param.variable_name }})}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+      ]
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    {% endif %}
+
+    Xdk.request(client, :{{ operation.method | lower }}, "{{ operation.path }}"{% if operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') | list or query_params %},
+      {% set path_params = operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') | list %}
+      {% if path_params %}
+      params: %{
+        {%- for param in path_params %}
+        "{{ param.original_name }}" => {{ param.variable_name }}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+      }{% if query_params %},{% endif %}
+      {% endif %}
+      {% if query_params %}
+      query: query
+      {% endif %}
+    {% endif %})
+  end
+{% endfor %}
+end

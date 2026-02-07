@@ -1,0 +1,21 @@
+defmodule Xdk.{{ tag.class_name }}Test do
+  use ExUnit.Case, async: true
+
+  describe "module structure" do
+    test "module exists" do
+      assert Code.ensure_loaded?(Xdk.{{ tag.class_name }})
+    end
+{% for structural_test in test_spec.structural_tests %}
+{% for method in structural_test.methods %}
+{% set path_param_count = method.required_params | selectattr('location', 'equalto', 'path') | list | length %}
+{% set has_query_params = method.required_params | selectattr('location', 'equalto', 'query') | list | length > 0 or method.optional_params | default(value=[]) | length > 0 %}
+
+    test "{{ method.method_name }} function exists" do
+      Code.ensure_loaded!(Xdk.{{ tag.class_name }})
+      assert function_exported?(Xdk.{{ tag.class_name }}, :{{ method.method_name }}, {{ path_param_count + 1 }}){% if has_query_params %} or function_exported?(Xdk.{{ tag.class_name }}, :{{ method.method_name }}, {{ path_param_count + 2 }}){% endif %}
+
+    end
+{% endfor %}
+{% endfor %}
+  end
+end
