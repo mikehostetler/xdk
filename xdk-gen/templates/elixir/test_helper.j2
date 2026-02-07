@@ -1,5 +1,5 @@
 {% raw %}
-ExUnit.start()
+ExUnit.start(exclude: [:integration])
 
 defmodule Xdk.TestHelper do
   def setup_client(_context \\ %{}) do
