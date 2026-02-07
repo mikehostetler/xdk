@@ -12,7 +12,7 @@ fn elixir_type(value: &str) -> String {
         "boolean" => "boolean()",
         "array" => "list()",
         "object" => "map()",
-        _ => "any()",
+        _ => "String.t()",
     }
     .to_string()
 }
@@ -48,8 +48,10 @@ language! {
             render "client_class" => "lib/xdk/{}.ex"
         },
         render "main_client" => "lib/xdk.ex",
-        render "application" => "lib/xdk/application.ex",
         render "errors" => "lib/xdk/errors.ex",
+        render "query" => "lib/xdk/query.ex",
+        render "streaming" => "lib/xdk/streaming.ex",
+        render "paginator" => "lib/xdk/paginator.ex",
         render "mix_exs" => "mix.exs",
         render "readme" => "README.md",
         render "gitignore" => ".gitignore",

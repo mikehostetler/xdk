@@ -1,6 +1,9 @@
 defmodule Xdk.{{ tag.class_name }} do
   @moduledoc "Auto-generated client for {{ tag.display_name }} operations"
 {% for operation in operations %}
+  {% set path_params = operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') | list %}
+  {% set query_params = operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}
+  {% set has_body = operation.request_body is defined and operation.request_body %}
 
   @doc """
   {{ operation.summary | default(value="") }}
@@ -11,14 +14,16 @@ defmodule Xdk.{{ tag.class_name }} do
   {% endif %}
   """
   @spec {{ operation.method_name }}(Xdk.t()
-    {%- for param in operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') %}, {{ param.variable_name }} :: {{ param.param_type | elixir_type }}{% endfor %}
-    {%- if operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}, opts :: keyword(){% endif %}
-  ) :: {:ok, map()} | {:error, Exception.t()}
+    {%- for param in path_params %}, {{ param.variable_name }} :: {{ param.param_type | elixir_type }}{% endfor %}
+    {%- if has_body %}, body :: map(){% endif %}
+    {%- if query_params %}, opts :: keyword(){% endif %}
+  ) :: {% if operation.is_streaming %}Enumerable.t(){% else %}{:ok, map()} | {:error, Xdk.Errors.error()}{% endif %}
+
   def {{ operation.method_name }}(client
-    {%- for param in operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') %}, {{ param.variable_name }}{% endfor %}
-    {%- if operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}, opts \\ []{% endif %}
+    {%- for param in path_params %}, {{ param.variable_name }}{% endfor %}
+    {%- if has_body %}, body{% endif %}
+    {%- if query_params %}, opts \\ []{% endif %}
   ) do
-    {% set query_params = operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'query') | list %}
     {% if query_params %}
     query =
       [
@@ -26,11 +31,12 @@ defmodule Xdk.{{ tag.class_name }} do
         {"{{ param.original_name }}", Keyword.get(opts, :{{ param.variable_name }})}{% if not loop.last %},{% endif %}
         {%- endfor %}
       ]
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Xdk.Query.build()
     {% endif %}
 
-    Xdk.request(client, :{{ operation.method | lower }}, "{{ operation.path }}"{% if operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') | list or query_params %},
-      {% set path_params = operation.parameters | default(value=[]) | selectattr('location', 'equalto', 'path') | list %}
+    {% if operation.is_streaming %}
+    Xdk.Streaming.ndjson_stream(client, :{{ operation.method | lower }}, "{{ operation.path }}"
+    {%- if path_params or query_params %},
       {% if path_params %}
       params: %{
         {%- for param in path_params %}
@@ -42,6 +48,24 @@ defmodule Xdk.{{ tag.class_name }} do
       query: query
       {% endif %}
     {% endif %})
+    {% else %}
+    Xdk.request(client, :{{ operation.method | lower }}, "{{ operation.path }}"
+    {%- if path_params or query_params or has_body %},
+      {% if path_params %}
+      params: %{
+        {%- for param in path_params %}
+        "{{ param.original_name }}" => {{ param.variable_name }}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+      }{% if query_params or has_body %},{% endif %}
+      {% endif %}
+      {% if query_params %}
+      query: query{% if has_body %},{% endif %}
+      {% endif %}
+      {% if has_body %}
+      json: body
+      {% endif %}
+    {% endif %})
+    {% endif %}
   end
 {% endfor %}
 end

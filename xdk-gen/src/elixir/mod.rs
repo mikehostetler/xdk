@@ -30,7 +30,6 @@ mod tests {
 
         assert!(output_dir.join("mix.exs").exists());
         assert!(output_dir.join("lib/xdk.ex").exists());
-        assert!(output_dir.join("lib/xdk/application.ex").exists());
         assert!(output_dir.join("lib/xdk/errors.ex").exists());
     }
 
